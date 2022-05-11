@@ -1,29 +1,12 @@
 #include <stdio.h>
-#include <string.h>
 
-#include "Socket.h"
-#include "Parser.h"
-
-#define READ() resp = socket_read(sock, 1024);printf("Response: %s\n", resp->content);response_free(resp);
-#define WRITE(str) socket_write(sock, str, strlen(str));
+#include "Gem.h"
 
 int main () {
-    Socket_t* sock = socket_new("168.235.111.58", 1965);
-
-    Response_t* resp;
-
-    WRITE("gemini://gemini.circumlunar.space/docs/gemtext.gmi\r\n");
-    READ();
-    resp = socket_read_all(sock);
-
-    TokList_t* toks = parse(resp->content);
+    TokList_t* toks = get_page("gemini.circumlunar.space", "docs/gemtext.gmi");
 
     for(int i=0 ; i<toks->length ; i++){
         Token_t* tok = toks->data[i];
-        printf("Type: %d\n", tok->type);
+        printf("Type: %s\n", tok->data);
     }
-
-    response_free(resp);
-
-    socket_free(sock);
 }
