@@ -145,7 +145,37 @@ void toklist_append(TokList_t* list, Token_t* tok){
     list->data[list->length-1] = tok;
 }
 
-TokList_t* parse(const char* text) {
+char* get_page_base(const char* page){
+    int last_len = 0;
+
+    char* copy_mut = strdup(page);
+
+    char* ptr;
+
+    strtok(copy_mut, "/");
+    while(1){
+        ptr = strtok(NULL, "/");
+
+        if(ptr == NULL){
+            break;
+        }
+
+        last_len = strlen(ptr);
+    }
+
+    int new_len = strlen(page) - (last_len - 1);
+
+    char* out = (char*) calloc(new_len+1, sizeof(char));
+
+    sprintf(out, "%.*s", new_len-1, page);
+    out[new_len] = 0;
+
+    free(copy_mut);
+
+    return out;
+}
+
+TokList_t* parse(const char* text, const char* current_page) {
     TokList_t* out = (TokList_t*) malloc(sizeof(TokList_t));
     out->data = (Token_t**) malloc(1);
     out->length = 0;
@@ -177,6 +207,10 @@ TokList_t* parse(const char* text) {
                 in_pre = true;
                 continue;
             }
+        }
+
+        if(tok->type == TOKEN_LINK){
+            ((LinkToken_t*)tok)->base = get_page_base(current_page);
         }
 
         toklist_append(out, tok);

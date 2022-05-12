@@ -7,6 +7,10 @@ int main () {
 
     for(int i=0 ; i<toks->length ; i++){
         Token_t* tok = toks->data[i];
-        printf("Type: %s\n", tok->data);
+
+        if(tok->type == TOKEN_LINK) {
+            LinkToken_t* lt = (LinkToken_t*) tok;
+            printf("To: %s (%s)\n", lt->url, lt->base);
+        }
     }
 }

@@ -35,6 +35,7 @@ typedef struct LinkToken{
     Token_t token;
     char* url;
     char* text;
+    char* base;
 } LinkToken_t;
 
 typedef struct PreToken{
@@ -47,7 +48,7 @@ typedef struct TokList {
     int length;
 } TokList_t;
 
-TokList_t* parse(const char* text);
+TokList_t* parse(const char* text, const char* current_page);
 
 #ifdef __cplusplus
 };
