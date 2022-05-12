@@ -7,6 +7,14 @@
 
 #include "Parser.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 TokList_t* get_page(const char* base, const char* page);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif //LIBGEM_GEM_H
