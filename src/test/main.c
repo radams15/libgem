@@ -8,9 +8,8 @@ int main () {
     for(int i=0 ; i<toks->length ; i++){
         Token_t* tok = toks->data[i];
 
-        if(tok->type == TOKEN_LINK) {
-            LinkToken_t* lt = (LinkToken_t*) tok;
-            printf("To: %s (%s)\n", lt->url, lt->base);
+        if(tok->type == TOKEN_QUOTE) {
+            printf("To: %s\n", tok->data);
         }
     }
 }

@@ -15,8 +15,8 @@ Token_t* list_item(std::string line){
     Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
     tok->type = TOKEN_LIST_ITEM;
 
-    tok->data = strdup(line.c_str());
-    tok->length = line.size();
+    tok->data = strdup(line.c_str()+1);
+    tok->length = line.size()-1;
 
     return tok;
 }
@@ -41,6 +41,9 @@ Token_t* header(std::string line){
 
     char* chars = tok->data;
     for(headertok->level=0 ; *chars++ == '#' ; headertok->level++){}
+
+    tok->length -= headertok->level;
+    tok->data += headertok->level;
 
     return tok;
 }
