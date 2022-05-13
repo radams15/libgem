@@ -48,7 +48,72 @@ Token_t* header(std::string line){
     return tok;
 }
 
-Token_t* link(std::string line){
+char* get_page_base(const char* page){
+    int last_len = 0;
+
+    char* copy_mut = strdup(page);
+
+    char* ptr;
+
+    strtok(copy_mut, "/");
+    while(1){
+        ptr = strtok(NULL, "/");
+
+        if(ptr == NULL){
+            break;
+        }
+
+        last_len = strlen(ptr);
+    }
+
+    int new_len = strlen(page) - (last_len - 1);
+
+    char* out = (char*) calloc(new_len+1, sizeof(char));
+
+    sprintf(out, "%.*s", new_len-1, page);
+    out[new_len] = 0;
+
+    free(copy_mut);
+
+    return out;
+}
+
+bool str_starts(std::string needle, std::string haystack) {
+    return haystack.find(needle) == 1;
+}
+
+int starts_with_proto(const char* line){
+    std::string ls = std::string(line);
+
+    return str_starts("https://", ls)
+    || str_starts("http://", ls)
+    || str_starts("gopher://", ls)
+    || str_starts("gemini://", ls)
+    || str_starts("ftp://", ls);
+}
+
+const char* strip(const char* in){
+    int leading = 0;
+    for (char c = *in; c == ' ' || c == '\t'; ++c) { leading++; }
+
+    int trailing = 0;
+    for(int i=strlen(in)-1 ; i>= 0 ; i++){
+        if(in[i] == ' ' || in[i] == '\t'){
+            trailing++;
+        }else{
+            break;
+        }
+    }
+
+    char* out = strndup(in, strlen(in)-trailing);
+    out += leading;
+
+    free((void*) in);
+
+    return out;
+}
+
+Token_t* link(std::string line, const char* current_page){
     LinkToken_t* linktok = (LinkToken_t*) malloc(sizeof(LinkToken_t));
     Token_t* tok = (Token_t*) linktok;
 
@@ -69,12 +134,28 @@ Token_t* link(std::string line){
         text = strtok(NULL, " ");
     }
 
+    url = strdup(url);
+
     if(text == NULL){
-        text = "";
+        text = (char*) "";
     }
 
     linktok->text = strdup(text);
-    linktok->url = strdup(url);
+
+    const char* base = get_page_base(current_page);
+
+    if(! starts_with_proto(url)){
+        base = strip(base);
+        url = (char*) strip((const char*) url);
+
+        linktok->url = (char*) calloc(strlen(url)+strlen(base)+16, sizeof(char));
+
+        sprintf(linktok->url, "%s%s", base, url);
+    }else{
+        linktok->url = strdup(url);
+    }
+
+    free((void*) base);
 
     free(data_cpy);
 
@@ -106,7 +187,7 @@ bool begins(std::string haystack, std::string needle){
     return haystack.find(needle) == 0;
 }
 
-Token_t* scan(std::string line){
+Token_t* scan(std::string line, const char* current_page){
     if(line == "\n"){
         return new Token_t {
                 TOKEN_NEWLINE,
@@ -120,7 +201,7 @@ Token_t* scan(std::string line){
     }else if(begins(line, "#")){
         return header(line);
     }else if(begins(line, "=>")){
-        return link(line);
+        return link(line, current_page);
     }else if(begins(line, ">")){
         return quote(line);
     }else if(line.length() > 0){
@@ -148,36 +229,6 @@ void toklist_append(TokList_t* list, Token_t* tok){
     list->data[list->length-1] = tok;
 }
 
-char* get_page_base(const char* page){
-    int last_len = 0;
-
-    char* copy_mut = strdup(page);
-
-    char* ptr;
-
-    strtok(copy_mut, "/");
-    while(1){
-        ptr = strtok(NULL, "/");
-
-        if(ptr == NULL){
-            break;
-        }
-
-        last_len = strlen(ptr);
-    }
-
-    int new_len = strlen(page) - (last_len - 1);
-
-    char* out = (char*) calloc(new_len+1, sizeof(char));
-
-    sprintf(out, "%.*s", new_len-1, page);
-    out[new_len] = 0;
-
-    free(copy_mut);
-
-    return out;
-}
-
 TokList_t* parse(const char* text, const char* current_page) {
     TokList_t* out = (TokList_t*) malloc(sizeof(TokList_t));
     out->data = (Token_t**) malloc(1);
@@ -200,7 +251,7 @@ TokList_t* parse(const char* text, const char* current_page) {
                 continue;
             }
         }else {
-            tok = scan(line);
+            tok = scan(line, current_page);
 
             if (tok == NULL) {
                 continue;
@@ -210,10 +261,6 @@ TokList_t* parse(const char* text, const char* current_page) {
                 in_pre = true;
                 continue;
             }
-        }
-
-        if(tok->type == TOKEN_LINK){
-            ((LinkToken_t*)tok)->base = get_page_base(current_page);
         }
 
         toklist_append(out, tok);

@@ -35,7 +35,6 @@ typedef struct LinkToken{
     Token_t token;
     char* url;
     char* text;
-    char* base;
 } LinkToken_t;
 
 typedef struct PreToken{
