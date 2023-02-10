@@ -10,12 +10,12 @@ void render_page(Page_t page){
     for(int i=0 ; i<toks->length ; i++){
         Token_t* tok = toks->data[i];
 
-        if(tok->type == TOKEN_LINK) {
+        /*if(tok->type == TOKEN_LINK) {
             LinkToken_t* lnk = tok;
-            printf("[%s = %s]\n", lnk->text, lnk->page.page);
-        }
+            printf("[%s = %s:%s:%s]\n", lnk->text, lnk->page.proto, lnk->page.base, lnk->page.page);
+        }*/
 
-        /*switch (tok->type) {
+        switch (tok->type) {
             case TOKEN_HEADER: {
                 HeaderToken_t* lnk = tok;
                 printf("%.*s %s %.*s\n", lnk->level, HEADER_CHARS, lnk->token.data, lnk->level, HEADER_CHARS);
@@ -47,12 +47,12 @@ void render_page(Page_t page){
 
             case TOKEN_EOF:
                 break;
-        }*/
+        }
     }
 }
 
 int main () {
-    Page_t homepage = {"gemini.circumlunar.space", ""};
+    Page_t homepage = {"gemini", "gemini.circumlunar.space", ""};
 
     render_page(homepage);
 }

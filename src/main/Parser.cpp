@@ -48,48 +48,40 @@ Token_t* header(std::string line){
     return tok;
 }
 
-char* get_page_base(const char* page){
-    int last_len = 0;
+const char* get_page_proto(const char* url) {
+    int url_len = strlen(url);
 
-    char* copy_mut = strdup(page);
+    int end;
+    for(end=0 ; url[end] != ':' && url[end+1] != '/' && url[end+2] != '/' && end+2 < url_len ; end++);
+    end++;
 
-    char* ptr;
-
-    strtok(copy_mut, "/");
-    while(1){
-        ptr = strtok(NULL, "/");
-
-        if(ptr == NULL){
-            break;
-        }
-
-        last_len = strlen(ptr);
-    }
-
-    int new_len = strlen(page) - (last_len - 1);
-
-    char* out = (char*) calloc(new_len+1, sizeof(char));
-
-    sprintf(out, "%.*s", new_len-1, page);
-    out[new_len] = 0;
-
-    free(copy_mut);
+    char* out = (char*) calloc(end+1, sizeof(char));
+    strncpy(out, url, end);
 
     return out;
 }
 
-bool str_starts(std::string needle, std::string haystack) {
-    return haystack.find(needle) != -1;
+char* get_page_base(const char* page){
+    const char* proto = get_page_proto(page);
+
+    char* copy_mut = strdup(page);
+
+    copy_mut += strlen(proto) + 3;
+    strtok(copy_mut, "/");
+
+    char* out = strdup(copy_mut);
+
+    return out;
 }
 
 int starts_with_proto(const char* line){
-    std::string ls = std::string(line);
+    const char* proto = get_page_proto(line);
 
-    return str_starts("https://", ls)
-    || str_starts("http://", ls)
-    || str_starts("gopher://", ls)
-    || str_starts("gemini://", ls)
-    || str_starts("ftp://", ls);
+    return strcmp("https", proto) == 0
+        || strcmp("http", proto) == 0
+        || strcmp("gopher", proto) == 0
+        || strcmp("gemini", proto) == 0
+        || strcmp("ftp", proto) == 0;
 }
 
 const char* strip(const char* in){
@@ -111,6 +103,18 @@ const char* strip(const char* in){
     free((void*) in);
 
     return out;
+}
+
+Page_t parse_url(const char* url) {
+    const char* proto = get_page_proto(url);
+    const char* base = get_page_base(url);
+    const char* page = url + strlen(proto) + 3 + strlen(base);
+
+    return {
+        proto,
+        base,
+        page
+    };
 }
 
 Token_t* link(std::string line, const char* current_page){
@@ -148,14 +152,13 @@ Token_t* link(std::string line, const char* current_page){
     base = strip(base);
 
     if(! starts_with_proto(url)){ // Does not start with protocol, e.g. internal
-        printf("%s = no proto\n", url);
         linktok->page = {
+                .proto = "gemini",
                 .base = strdup(base),
                 .page = strdup(url)
         };
     } else{
-        fprintf(stderr, "Cannot interpret URL: '%s'\n", url);
-        exit(1);
+        linktok->page = parse_url(url);
     }
 
     free((void*) base);

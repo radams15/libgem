@@ -21,6 +21,7 @@ typedef enum TokenType {
 } TokenType_t;
 
 typedef struct Page {
+    const char* proto;
     const char* base;
     const char* page;
 } Page_t;
