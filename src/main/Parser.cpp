@@ -121,7 +121,9 @@ Token_t* link(std::string line, const char* current_page){
     LinkToken_t* linktok = (LinkToken_t*) malloc(sizeof(LinkToken_t));
     Token_t* tok = (Token_t*) linktok;
 
-    //todo remove leading spaces
+    if(current_page[strlen(current_page)-2] == '\r'){
+        ((char*)current_page)[strlen(current_page)-3] = 0;
+    }
 
     tok->type = TOKEN_LINK;
     tok->data = strdup(line.c_str()+2);
@@ -152,10 +154,15 @@ Token_t* link(std::string line, const char* current_page){
     base = strip(base);
 
     if(! starts_with_proto(url)){ // Does not start with protocol, e.g. internal
+        char* current_page_baseless = strdup((char*) current_page + strlen("gemini://") + strlen(base));
+        char* new_page = (char*) calloc(strlen(current_page_baseless) + strlen(url) + 2, sizeof(char));
+        sprintf(new_page, "%s/%s", current_page_baseless, url);
+
+        free(current_page_baseless);
         linktok->page = {
                 .proto = "gemini",
                 .base = strdup(base),
-                .page = strdup(url)
+                .page = new_page
         };
     } else{
         linktok->page = parse_url(url);
