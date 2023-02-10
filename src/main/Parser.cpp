@@ -79,7 +79,7 @@ char* get_page_base(const char* page){
 }
 
 bool str_starts(std::string needle, std::string haystack) {
-    return haystack.find(needle) == 1;
+    return haystack.find(needle) != -1;
 }
 
 int starts_with_proto(const char* line){
@@ -144,15 +144,18 @@ Token_t* link(std::string line, const char* current_page){
 
     const char* base = get_page_base(current_page);
 
-    if(! starts_with_proto(url)){
-        base = strip(base);
-        url = (char*) strip((const char*) url);
+    url = (char*) strip((const char*) url);
+    base = strip(base);
 
-        linktok->url = (char*) calloc(strlen(url)+strlen(base)+16, sizeof(char));
-
-        sprintf(linktok->url, "%s%s", base, url);
-    }else{
-        linktok->url = strdup(url);
+    if(! starts_with_proto(url)){ // Does not start with protocol, e.g. internal
+        printf("%s = no proto\n", url);
+        linktok->page = {
+                .base = strdup(base),
+                .page = strdup(url)
+        };
+    } else{
+        fprintf(stderr, "Cannot interpret URL: '%s'\n", url);
+        exit(1);
     }
 
     free((void*) base);

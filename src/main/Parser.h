@@ -20,6 +20,11 @@ typedef enum TokenType {
     TOKEN_EOF
 } TokenType_t;
 
+typedef struct Page {
+    const char* base;
+    const char* page;
+} Page_t;
+
 typedef struct Token {
     TokenType_t type;
     char* data;
@@ -33,7 +38,7 @@ typedef struct HeaderToken{
 
 typedef struct LinkToken{
     Token_t token;
-    char* url;
+    Page_t page;
     char* text;
 } LinkToken_t;
 
