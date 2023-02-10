@@ -52,6 +52,8 @@ TokList_t *get_page(const char *base, const char *page) {
 
     Response_t* resp = socket_read_all(sock);
 
+    printf("%s\n", resp->content);
+
     TokList_t* toks = parse(resp->content, page_full);
 
     response_free(resp);
