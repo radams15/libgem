@@ -58,6 +58,11 @@ const char* get_page_proto(const char* url) {
     char* out = (char*) calloc(end+1, sizeof(char));
     strncpy(out, url, end);
 
+    if(strncmp(out, url, strlen(out)) == 0){ // There was no protocol.
+        free(out);
+        return strdup("gemini"); // Assume gemini protocol.
+    }
+
     return out;
 }
 
@@ -242,7 +247,7 @@ void toklist_append(TokList_t* list, Token_t* tok){
     list->data[list->length-1] = tok;
 }
 
-TokList_t* parse(const char* text, const char* current_page) {
+TokList_t* parse_page(const char* text, const char* current_page) {
     TokList_t* out = (TokList_t*) malloc(sizeof(TokList_t));
     out->data = (Token_t**) malloc(1);
     out->length = 0;

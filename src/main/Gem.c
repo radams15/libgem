@@ -20,10 +20,8 @@ const char* ip_lookup(const char* host){
     struct in_addr **addr_list;
     int i;
     if ( (hent = gethostbyname( host ) ) == NULL){
-        herror("gethostbyname error");
         fprintf(stderr, "Unknown host: '%s'\n", host);
         return NULL;
-
     }
     addr_list = (struct in_addr **) hent->h_addr_list;
 
@@ -50,7 +48,7 @@ TokList_t *get_page(Page_t page) {
 
     //printf("%s\n", resp->content);
 
-    TokList_t* toks = parse(resp->content, page_full);
+    TokList_t* toks = parse_page(resp->content, page_full);
 
     response_free(resp);
 

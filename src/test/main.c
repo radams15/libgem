@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "Gem.h"
 
@@ -70,8 +71,6 @@ void render_page(Page_t page){
         }
     }
 
-    printf("Bitmap is %d long\n", bitmap_used(links));
-
     printf("\t=> ");
     char entry[256];
     fgets(entry, sizeof entry, stdin);
@@ -80,11 +79,20 @@ void render_page(Page_t page){
         int index = atoi(entry + 1);
         Page_t to_go = ((LinkToken_t*)links[index])->page;
         render_page(to_go);
+    }else if(entry[0] == 'g'){
+        char* url = entry+1;
+        if(url[strlen(url)-1] == '\n' || url[strlen(url)-1] == '\r'){
+            url[strlen(url)-1] = 0;
+        }
+
+        Page_t page = parse_url(url);
+
+        render_page(page);
     }
 }
 
 int main () {
-    Page_t homepage = {"gemini", "gemini.circumlunar.space", "docs/"};
+    Page_t homepage = {"gemini", "gemini.circumlunar.space", ""};
 
     render_page(homepage);
 }
