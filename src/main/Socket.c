@@ -113,6 +113,8 @@ void socket_free(Socket_t *sock) {
     close(sock->sd);
     SSL_free(sock->ssl);
     SSL_CTX_free(sock->ctx);
+
+    free(sock);
 }
 
 int socket_write(Socket_t* sock, const char* buf, int len) {
@@ -125,8 +127,9 @@ Response_t* socket_read_all(Socket_t *sock) {
     Response_t* out = malloc(sizeof(Response_t));
 
     out->content = calloc(1, sizeof(char));
+    out->length = 0;
 
-    char* tmp = calloc(CHUNK_SIZ, sizeof(char));
+    char tmp[CHUNK_SIZ];
 
     int length;
     while(1) {

@@ -44,6 +44,8 @@ typedef struct TokList {
 TokList_t parse_page(const char* text, const char* current_page);
 Page_t parse_url(const char* url);
 
+void toklist_free(TokList_t* list);
+
 #ifdef __cplusplus
 };
 #endif

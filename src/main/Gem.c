@@ -37,6 +37,7 @@ TokList_t get_page(Page_t page) {
     const char* ip = ip_lookup(page.base);
 
     Socket_t* sock = socket_new(ip, 1965);
+    free((void*) ip);
 
     char* page_full = (char*) calloc(strlen(page.base) + strlen(page.page) + 16, sizeof(char));
     sprintf(page_full, "gemini://%s/%s\r\n", page.base, page.page);
@@ -49,6 +50,8 @@ TokList_t get_page(Page_t page) {
     TokList_t toks = parse_page(resp->content, page_full);
 
     response_free(resp);
+    response_free(header);
+    free(page_full);
 
     socket_free(sock);
 

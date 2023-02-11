@@ -86,6 +86,8 @@ void render_page(Page_t page){
 
         render_page(page);
     }
+
+    toklist_free(&toks);
 }
 
 int main () {

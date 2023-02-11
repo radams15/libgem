@@ -8,6 +8,8 @@
 
 #include "Parser.h"
 
+#define TRY_FREE(a) a != NULL? free(a):1
+
 const char* dups(const char* in) {
     char* out = calloc(strlen(in)+1, sizeof(char));
 
@@ -30,39 +32,34 @@ const char* substr(const char* in, int start) {
 }
 
 Token_t list_item(const char* line){
-    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
-    tok->type = TOKEN_LIST_ITEM;
-
-    tok->data = (char*) dups(line);
-    tok->length = strlen(line);
-
-    return *tok;
+    return (Token_t) {
+        .type = TOKEN_LIST_ITEM,
+        .data = (char*) dups(line),
+        .length = strlen(line)
+    };
 }
 
 Token_t quote(const char* line){
-    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
-    tok->type = TOKEN_QUOTE;
-
-    tok->data = (char*) dups(line);
-    tok->length = strlen(line);
-
-    return *tok;
+    return (Token_t) {
+            .type = TOKEN_QUOTE,
+            .data = (char*) dups(line),
+            .length = strlen(line)
+    };
 }
 
 Token_t header(const char* line) {
-    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
+    Token_t tok = (Token_t) {
+            .type = TOKEN_HEADER,
+            .length = strlen(line)
+    };
 
-    tok->type = TOKEN_HEADER;
-    tok->data = (char*) dups(line);
-    tok->length = strlen(line);
+    const char* chars = line;
+    for(tok.header_level=0 ; *chars++ == '#' ; tok.header_level++){}
 
-    char* chars = tok->data;
-    for(tok->header_level=0 ; *chars++ == '#' ; tok->header_level++){}
+    tok.length -= tok.header_level;
+    tok.data = (char*) substr(line, tok.header_level);
 
-    tok->length -= tok->header_level;
-    tok->data += tok->header_level;
-
-    return *tok;
+    return tok;
 }
 
 const char* get_page_proto(const char* url) {
@@ -102,11 +99,15 @@ char* get_page_base(const char* page) {
 int starts_with_proto(const char* line) {
     const char* proto = get_page_proto(line);
 
-    return strcmp("https", proto) == 0
+    int out = strcmp("https", proto) == 0
         || strcmp("http", proto) == 0
         || strcmp("gopher", proto) == 0
         || strcmp("gemini", proto) == 0
         || strcmp("ftp", proto) == 0;
+
+    free((void*) proto);
+
+    return out;
 }
 
 const char* strip(const char* in){
@@ -122,8 +123,7 @@ const char* strip(const char* in){
         }
     }
 
-    char* out = strndup(in, strlen(in)-trailing);
-    out += leading;
+    char* out = subnstr(in, leading, strlen(in)-leading-trailing+1);
 
     free((void*) in);
 
@@ -133,7 +133,7 @@ const char* strip(const char* in){
 Page_t parse_url(const char* url) {
     const char* proto = get_page_proto(url);
     const char* base = get_page_base(url);
-    const char* page = url + strlen(proto) + 3 + strlen(base);
+    const char* page = dups(url + strlen(proto) + 3 + strlen(base));
 
     return (Page_t){
         proto,
@@ -143,17 +143,17 @@ Page_t parse_url(const char* url) {
 }
 
 Token_t link(const char* line, const char* current_page){
-    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
+    Token_t tok = (Token_t) {
+            .type = TOKEN_LINK,
+            .data = (char *) dups(line),
+            .length = strlen(line)
+    };
 
     if(current_page[strlen(current_page)-2] == '\r'){
         ((char*)current_page)[strlen(current_page)-3] = 0;
     }
 
-    tok->type = TOKEN_LINK;
-    tok->data = (char*) dups(line);
-    tok->length = strlen(line);
-
-    char* data_cpy = (char*)dups(tok->data);
+    char* data_cpy = (char*)dups(tok.data);
     char* url = strtok(data_cpy, "\t");
     if(url == NULL){
         url = strtok(data_cpy, " ");
@@ -170,7 +170,7 @@ Token_t link(const char* line, const char* current_page){
         text = (char*) "";
     }
 
-    tok->link_text = (char*) dups(text);
+    tok.link_text = (char*) dups(text);
 
     const char* base = get_page_base(current_page);
 
@@ -183,41 +183,37 @@ Token_t link(const char* line, const char* current_page){
         sprintf(new_page, "%s/%s", current_page_baseless, url);
 
         free(current_page_baseless);
-        tok->link_page = (Page_t){
-                .proto = "gemini",
+        tok.link_page = (Page_t){
+                .proto = dups("gemini"),
                 .base = dups(base),
                 .page = new_page
         };
     } else{
-        tok->link_page = parse_url(url);
+        tok.link_page = parse_url(url);
     }
 
     free((void*) base);
+    free((void*) url);
 
     free(data_cpy);
 
-    return *tok;
+    return tok;
 }
 
 Token_t pre(const char* line){
-    Token_t* pretok = (Token_t*) malloc(sizeof(Token_t));
-    Token_t* tok = (Token_t*) pretok;
-
-    tok->type = TOKEN_PREFORMAT;
-    tok->data = (char*) dups(line);
-    tok->length = strlen(line);
-
-    return *pretok;
+    return (Token_t) {
+            .type = TOKEN_PREFORMAT,
+            .data = (char*) dups(line),
+            .length = strlen(line)
+    };
 }
 
 Token_t text(const char* line){
-    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
-    tok->type = TOKEN_TEXT;
-
-    tok->data = (char*) dups(line);
-    tok->length = strlen(line);
-
-    return *tok;
+    return (Token_t) {
+            .type = TOKEN_TEXT,
+            .data = (char*) dups(line),
+            .length = strlen(line)
+    };;
 }
 
 int begins(const char* haystack, const char* needle){
@@ -266,6 +262,34 @@ void toklist_append(TokList_t* list, Token_t tok){
     list->data[list->length-1] = tok;
 }
 
+void token_free(Token_t* tok) {
+    /*
+    TokenType_t type;
+    char* data;
+    int length;
+    int header_level;
+    Page_t link_page;
+    char* link_text;
+    char* pre_alt;
+     */
+
+    TRY_FREE(tok->data);
+    TRY_FREE(tok->link_text);
+    TRY_FREE(tok->pre_alt);
+
+    TRY_FREE((void*) tok->link_page.proto);
+    TRY_FREE((void*) tok->link_page.page);
+    TRY_FREE((void*) tok->link_page.base);
+}
+
+void toklist_free(TokList_t* list) {
+    for(int i=0 ; i<list->length ; i++) {
+        token_free(&(list->data[i]));
+    }
+
+    free(list->data);
+}
+
 TokList_t parse_page(const char* text, const char* current_page) {
     TokList_t out;
     out.data = (Token_t*) malloc(1);
@@ -275,7 +299,7 @@ TokList_t parse_page(const char* text, const char* current_page) {
     Token_t tok;
     char* line;
     char* text_mut = (char*)dups(text);
-    
+
     line = text_mut;
     while (line != NULL) {
         char* next_line = strchr(line, '\n');
@@ -290,7 +314,7 @@ TokList_t parse_page(const char* text, const char* current_page) {
                 goto end;
             }
         }else {
-            tok = scan(dups(line), current_page);
+            tok = scan(line, current_page);
 
             if (tok.type == TOKEN_EOF) {
                 goto end;
@@ -308,6 +332,8 @@ end:
         if(next_line) *next_line = '\n';
         line = next_line? (next_line+1) : NULL;
     }
+
+    free(text_mut);
 
     return out;
 }
