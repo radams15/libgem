@@ -8,41 +8,61 @@
 
 #include "Parser.h"
 
-Token_t* list_item(const char* line){
+const char* dups(const char* in) {
+    char* out = calloc(strlen(in)+1, sizeof(char));
+
+    strncpy(out, in, strlen(in));
+    out[strlen(in)] = 0;
+
+    return out;
+}
+
+const char* subnstr(const char* in, int start, int length) {
+    char* out = calloc(length+1, sizeof(char));
+
+    snprintf(out, length, "%s", in+start);
+
+    return out;
+}
+
+const char* substr(const char* in, int start) {
+    return subnstr(in, start, strlen(in)-start+1);
+}
+
+Token_t list_item(const char* line){
     Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
     tok->type = TOKEN_LIST_ITEM;
 
-    tok->data = strdup(line);
+    tok->data = (char*) dups(line);
     tok->length = strlen(line);
 
-    return tok;
+    return *tok;
 }
 
-Token_t* quote(const char* line){
+Token_t quote(const char* line){
     Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
     tok->type = TOKEN_QUOTE;
 
-    tok->data = strdup(line);
+    tok->data = (char*) dups(line);
     tok->length = strlen(line);
 
-    return tok;
+    return *tok;
 }
 
-Token_t* header(const char* line) {
-    HeaderToken_t* headertok = (HeaderToken_t*) malloc(sizeof(HeaderToken_t));
-    Token_t* tok = (Token_t*) headertok;
+Token_t header(const char* line) {
+    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
 
     tok->type = TOKEN_HEADER;
-    tok->data = strdup(line);
+    tok->data = (char*) dups(line);
     tok->length = strlen(line);
 
     char* chars = tok->data;
-    for(headertok->level=0 ; *chars++ == '#' ; headertok->level++){}
+    for(tok->header_level=0 ; *chars++ == '#' ; tok->header_level++){}
 
-    tok->length -= headertok->level;
-    tok->data += headertok->level;
+    tok->length -= tok->header_level;
+    tok->data += tok->header_level;
 
-    return tok;
+    return *tok;
 }
 
 const char* get_page_proto(const char* url) {
@@ -55,9 +75,9 @@ const char* get_page_proto(const char* url) {
     char* out = (char*) calloc(end+1, sizeof(char));
     strncpy(out, url, end);
 
-    if(strncmp(out, url, strlen(out)) == 0){ // There was no protocol.
+    if(strncmp(out, url, strlen(out)) != 0){ // There was no protocol.
         free(out);
-        return strdup("gemini"); // Assume gemini protocol.
+        return dups(""); // Output no protocol if none defined.
     }
 
     return out;
@@ -66,13 +86,14 @@ const char* get_page_proto(const char* url) {
 char* get_page_base(const char* page) {
     const char* proto = get_page_proto(page);
 
-    char* copy_mut = strdup(page);
+    char* copy_mut = (char*) substr(page, strlen(proto));
 
-    copy_mut += strlen(proto) + 3;
     free(proto);
-    strtok(copy_mut, "/");
 
-    char* out = strdup(copy_mut);
+    strtok(copy_mut, "/");
+    char*base = strtok(NULL, "/");
+
+    char* out = dups(base);
     free(copy_mut);
 
     return out;
@@ -121,19 +142,18 @@ Page_t parse_url(const char* url) {
     };
 }
 
-Token_t* link(const char* line, const char* current_page){
-    LinkToken_t* linktok = (LinkToken_t*) malloc(sizeof(LinkToken_t));
-    Token_t* tok = (Token_t*) linktok;
+Token_t link(const char* line, const char* current_page){
+    Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
 
     if(current_page[strlen(current_page)-2] == '\r'){
         ((char*)current_page)[strlen(current_page)-3] = 0;
     }
 
     tok->type = TOKEN_LINK;
-    tok->data = strdup(line);
+    tok->data = (char*) dups(line);
     tok->length = strlen(line);
 
-    char* data_cpy = strdup(tok->data);
+    char* data_cpy = (char*)dups(tok->data);
     char* url = strtok(data_cpy, "\t");
     if(url == NULL){
         url = strtok(data_cpy, " ");
@@ -144,13 +164,13 @@ Token_t* link(const char* line, const char* current_page){
         text = strtok(NULL, " ");
     }
 
-    url = strdup(url);
+    url = (char*)dups(url);
 
     if(text == NULL){
         text = (char*) "";
     }
 
-    linktok->text = strdup(text);
+    tok->link_text = (char*) dups(text);
 
     const char* base = get_page_base(current_page);
 
@@ -158,61 +178,60 @@ Token_t* link(const char* line, const char* current_page){
     base = strip(base);
 
     if(! starts_with_proto(url)){ // Does not start with protocol, e.g. internal
-        char* current_page_baseless = strdup((char*) current_page + strlen("gemini://") + strlen(base));
+        char* current_page_baseless = (char*) dups((char*) current_page + strlen("gemini://") + strlen(base));
         char* new_page = (char*) calloc(strlen(current_page_baseless) + strlen(url) + 2, sizeof(char));
         sprintf(new_page, "%s/%s", current_page_baseless, url);
 
         free(current_page_baseless);
-        linktok->page = (Page_t){
+        tok->link_page = (Page_t){
                 .proto = "gemini",
-                .base = strdup(base),
+                .base = dups(base),
                 .page = new_page
         };
     } else{
-        linktok->page = parse_url(url);
+        tok->link_page = parse_url(url);
     }
 
     free((void*) base);
 
     free(data_cpy);
 
-    return tok;
+    return *tok;
 }
 
-Token_t* pre(const char* line){
-    PreToken_t* pretok = (PreToken_t*) malloc(sizeof(PreToken_t));
+Token_t pre(const char* line){
+    Token_t* pretok = (Token_t*) malloc(sizeof(Token_t));
     Token_t* tok = (Token_t*) pretok;
 
     tok->type = TOKEN_PREFORMAT;
-    tok->data = strdup(line);
+    tok->data = (char*) dups(line);
     tok->length = strlen(line);
 
-    return tok;
+    return *pretok;
 }
 
-Token_t* text(const char* line){
+Token_t text(const char* line){
     Token_t* tok = (Token_t*) malloc(sizeof(Token_t));
     tok->type = TOKEN_TEXT;
 
-    tok->data = strdup(line);
+    tok->data = (char*) dups(line);
     tok->length = strlen(line);
 
-    return tok;
+    return *tok;
 }
 
 int begins(const char* haystack, const char* needle){
     return strncmp(haystack, needle, strlen(needle)) == 0;
 }
 
-Token_t* scan(const char* line, const char* current_page){
-    /*if(line == "\n"){
-        return new Token_t {
+Token_t scan(const char* line, const char* current_page){
+    if(strcmp(line, "\r\n") == 0){
+        return (Token_t) {
                 TOKEN_NEWLINE,
                 NULL,
                 0
         };
-    }else */
-    if(begins(line, "```")){
+    }else if(begins(line, "```")){
         return pre(line+3);
     }else if(begins(line, "*")){
         return list_item(line+1);
@@ -226,64 +245,66 @@ Token_t* scan(const char* line, const char* current_page){
         return text(line);
     }
 
-    return NULL;
+    return (Token_t){
+        .type = TOKEN_EOF
+    };
 }
 
-void append_pre(const char* line, PreToken_t* pretok){
-    Token_t* tok = (Token_t*) pretok;
-
+void append_pre(const char* line, Token_t* tok){
     tok->length += strlen(line)+2;
 
     tok->data = (char*) realloc(tok->data, tok->length*sizeof(char));
 
-    strcat(tok->data, strdup(line));
+    strcat(tok->data, dups(line));
     strcat(tok->data, "\n");
 }
 
-void toklist_append(TokList_t* list, Token_t* tok){
+void toklist_append(TokList_t* list, Token_t tok){
     list->length++;
-    list->data = (Token_t**) realloc(list->data, list->length*sizeof(Token_t*));
+    list->data = (Token_t*) realloc(list->data, list->length*sizeof(Token_t));
 
     list->data[list->length-1] = tok;
 }
 
-TokList_t* parse_page(const char* text, const char* current_page) {
-    TokList_t* out = (TokList_t*) malloc(sizeof(TokList_t));
-    out->data = (Token_t**) malloc(1);
-    out->length = 0;
+TokList_t parse_page(const char* text, const char* current_page) {
+    TokList_t out;
+    out.data = (Token_t*) malloc(1);
+    out.length = 0;
 
     int in_pre = 0;
-    Token_t* tok;
+    Token_t tok;
     char* line;
-    char* text_mut = strdup(text);
+    char* text_mut = (char*)dups(text);
 
     printf("Raw: %s\n\n\n", text);
 
     line = strtok(text_mut, "\r\n");
     while (line != NULL) {
+
         printf("Line: %s\n", line);
+
         if(in_pre){
             if(begins(line, "```")){
                 in_pre = 0;
-                ((PreToken_t*)tok)->alt = strdup(line+3);
+                tok.pre_alt = (char*) substr(line, 3);
             }else{
-                append_pre(line, (PreToken_t*) tok);
+                append_pre(line, &tok);
                 goto end;
             }
         }else {
-            tok = scan(strdup(line), current_page);
+            tok = scan(dups(line), current_page);
 
-            if (tok == NULL) {
+            if (tok.type == TOKEN_EOF) {
                 goto end;
             }
 
-            if(tok->type == TOKEN_PREFORMAT){
+            if(tok.type == TOKEN_PREFORMAT){
                 in_pre = 1;
                 goto end;
             }
         }
 
-        toklist_append(out, tok);
+        toklist_append(&out, tok);
 
 end:
         line = strtok(NULL, "\r\n");

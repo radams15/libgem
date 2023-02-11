@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-TokList_t* get_page(Page_t page);
+TokList_t get_page(Page_t page);
 
 #ifdef __cplusplus
 };

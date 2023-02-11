@@ -6,7 +6,7 @@
 
 #define HEADER_CHARS "***************"
 #define MAX_LINKS 256
-#define BITMAP_EMPTY -1
+#define BITMAP_EMPTY (-1)
 
 void bitmap_add(size_t* bitmap, size_t value){
     size_t* it;
@@ -25,41 +25,38 @@ int bitmap_used(size_t* bitmap){
 }
 
 void render_page(Page_t page){
-    TokList_t* toks = get_page(page);
+    TokList_t toks = get_page(page);
 
     size_t links[MAX_LINKS];
     bitmap_init(links, MAX_LINKS);
 
-    for(int i=0 ; i<toks->length ; i++){
-        Token_t* tok = toks->data[i];
+    for(int i=0 ; i<toks.length ; i++){
+        Token_t tok = toks.data[i];
 
-        switch (tok->type) {
+        switch (tok.type) {
             case TOKEN_HEADER: {
-                HeaderToken_t* lnk = tok;
-                printf("%.*s %s %.*s\n", lnk->level, HEADER_CHARS, lnk->token.data, lnk->level, HEADER_CHARS);
+                printf("%.*s %s %.*s\n", tok.header_level, HEADER_CHARS, tok.data, tok.header_level, HEADER_CHARS);
             }break;
 
             case TOKEN_LIST_ITEM: {
-                printf(" - %s\n", tok->data);
+                printf(" - %s\n", tok.data);
             }break;
 
             case TOKEN_TEXT: {
-                printf("%s\n", tok->data);
+                printf("%s\n", tok.data);
             }break;
 
             case TOKEN_LINK: {
-                LinkToken_t* lnk = tok;
-                printf("(%d) [%s = %s]\n", bitmap_used(links), lnk->text, lnk->page.page);
-                bitmap_add(links, (size_t) lnk);
+                printf("(%d) [%s = %s]\n", bitmap_used(links), tok.link_text, tok.link_page.page);
+                bitmap_add(links, (size_t) &tok);
             }break;
 
             case TOKEN_QUOTE: {
-                printf("''%s''\n", tok->data);
+                printf("''%s''\n", tok.data);
             }break;
 
             case TOKEN_PREFORMAT: {
-                PreToken_t *pre = tok;
-                printf("[ %s ]\n", tok->data);
+                printf("[ %s ]\n", tok.data);
             }break;
 
             case TOKEN_NEWLINE:
@@ -77,7 +74,7 @@ void render_page(Page_t page){
 
     if(entry[0] == 'c'){
         int index = atoi(entry + 1);
-        Page_t to_go = ((LinkToken_t*)links[index])->page;
+        Page_t to_go = ((Token_t*)links[index])->link_page;
         render_page(to_go);
     }else if(entry[0] == 'g'){
         char* url = entry+1;

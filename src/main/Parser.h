@@ -30,30 +30,18 @@ typedef struct Token {
     TokenType_t type;
     char* data;
     int length;
+    int header_level;
+    Page_t link_page;
+    char* link_text;
+    char* pre_alt;
 } Token_t;
 
-typedef struct HeaderToken{
-    Token_t token;
-    int level;
-} HeaderToken_t;
-
-typedef struct LinkToken{
-    Token_t token;
-    Page_t page;
-    char* text;
-} LinkToken_t;
-
-typedef struct PreToken{
-    Token_t token;
-    char* alt;
-} PreToken_t;
-
 typedef struct TokList {
-    Token_t** data;
+    Token_t* data;
     int length;
 } TokList_t;
 
-TokList_t* parse_page(const char* text, const char* current_page);
+TokList_t parse_page(const char* text, const char* current_page);
 Page_t parse_url(const char* url);
 
 #ifdef __cplusplus

@@ -33,7 +33,7 @@ const char* ip_lookup(const char* host){
 }
 #endif
 
-TokList_t *get_page(Page_t page) {
+TokList_t get_page(Page_t page) {
     const char* ip = ip_lookup(page.base);
 
     Socket_t* sock = socket_new(ip, 1965);
@@ -46,9 +46,7 @@ TokList_t *get_page(Page_t page) {
 
     Response_t* resp = socket_read_all(sock);
 
-    //printf("%s\n", resp->content);
-
-    TokList_t* toks = parse_page(resp->content, page_full);
+    TokList_t toks = parse_page(resp->content, page_full);
 
     response_free(resp);
 
