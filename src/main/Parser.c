@@ -275,13 +275,11 @@ TokList_t parse_page(const char* text, const char* current_page) {
     Token_t tok;
     char* line;
     char* text_mut = (char*)dups(text);
-
-    printf("Raw: %s\n\n\n", text);
-
-    line = strtok(text_mut, "\r\n");
+    
+    line = text_mut;
     while (line != NULL) {
-
-        printf("Line: %s\n", line);
+        char* next_line = strchr(line, '\n');
+        if(next_line) *next_line = '\0';
 
         if(in_pre){
             if(begins(line, "```")){
@@ -307,7 +305,8 @@ TokList_t parse_page(const char* text, const char* current_page) {
         toklist_append(&out, tok);
 
 end:
-        line = strtok(NULL, "\r\n");
+        if(next_line) *next_line = '\n';
+        line = next_line? (next_line+1) : NULL;
     }
 
     return out;
