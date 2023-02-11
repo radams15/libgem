@@ -3,7 +3,7 @@ project(libgem C CXX)
 
 set(CMAKE_C_STANDARD 99)
 
-add_library(libgem STATIC src/main/Socket.c src/main/Socket.h src/main/Parser.cpp src/main/Parser.h src/main/Gem.c src/main/Gem.h)
+add_library(libgem STATIC src/main/Socket.c src/main/Socket.h src/main/Parser.c src/main/Parser.h src/main/Gem.c src/main/Gem.h)
 
 find_package(OpenSSL REQUIRED)
 
